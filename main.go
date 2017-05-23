@@ -6,7 +6,8 @@ import (
 	"path/filepath"
 	"log"
 	"os"
-	"strings"
+	"sort"
+	"github.com/spf13/cast"
 )
 
 func renameFiles(dir string) {
@@ -16,13 +17,13 @@ func renameFiles(dir string) {
 
 	abs, _ := filepath.Abs(dir)
 	b := filepath.Base(abs)
-	files, _ := dry.ListDirFiles(dir)
-	for _, v := range files {
-		if strings.HasPrefix(v, b) {
-			continue
-		}
-		oldFile := filepath.Join(dir, v)
-		newFile := filepath.Join(abs, b+`_`+v)
+	files, _ := dry.ListDirFiles(abs)
+	sort.Strings(files)
+
+	for idx, v := range files {
+		oldFile := filepath.Join(abs, v)
+		ext := filepath.Ext(v)
+		newFile := filepath.Join(abs, b+`_`+cast.ToString(idx)+ext)
 		//dry.FileTouch(newFile)
 		err := os.Rename(oldFile, newFile)
 		if err != nil {
@@ -30,9 +31,9 @@ func renameFiles(dir string) {
 		}
 	}
 
-	subDirs, _ := dry.ListDirDirectories(dir)
+	subDirs, _ := dry.ListDirDirectories(abs)
 	for _, sub := range subDirs {
-		renameFiles(sub)
+		renameFiles(filepath.Join(abs, sub))
 	}
 }
 func main() {
@@ -50,7 +51,21 @@ func main() {
 	}
 
 	app.Action = func(c *cli.Context) error {
+		log.Println("rename files in", path)
+		//renameFiles(`D:\ffres\4.6大厅\4.6动画序列帧`)
 		renameFiles(path)
+
+		//subDirs, _ := dry.ListDirDirectories(path)
+		//for _, sub := range subDirs {
+		//	renameFiles(sub)
+		//}
+
+		//cmd := exec.Command("texturemerger")
+		//cmd.Dir = h5Path
+		//out, err := cmd.Output()
+		//if err != nil {
+		//	sugar.Fatal(err)
+		//}
 
 		return nil
 	}
